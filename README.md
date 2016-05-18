@@ -3,6 +3,8 @@ Patched version of fslogger to output data in YAML format. Current versions of f
 
 * [fslogger](https://gist.github.com/walkie/6282157) - an update of the [original fslogger](http://osxbook.com/software/fslogger/)
   * Requires [OpenSource XNU[(https://github.com/opensource-apple/xnu) to compile. No need to build, just run the compilation line in the build instructions.
+* [fswatch](https://github.com/emcrisostomo/fswatch) - a similar project that might meet your needs.
+  * [FSW](https://github.com/emcrisostomo/fsw) was created to replace fswatch but then they merged and fswatch became primary, again.
 
 ## Compile fslogger-yaml
 
@@ -25,3 +27,5 @@ cutaway> python fslogger-yaml-parser.py test-fslogger-yaml3.txt
 * Update fslogger-yaml to accept paths and process information to limit data collected.
 * Update python parser to provide more functionality and output useful information.
 * Add ruby parser <- John H. Sawyer?
+
+

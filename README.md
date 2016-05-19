@@ -8,7 +8,7 @@ Patched version of fslogger to output data in YAML format. Current versions of f
 
 ## Compile fslogger-yaml
 
-Compiling requires Apple's [OpenSource XNU[(https://github.com/opensource-apple/xnu). Clone this into the fslogger-yaml working directory and provide GCC with the BSD libraries location.
+Compiling requires Apple's [OpenSource XNU](https://github.com/opensource-apple/xnu). Clone this into the fslogger-yaml working directory and provide GCC with the BSD libraries location.
 
 ```bash
 cutaway> gcc -I./xnu/bsd -Wall -o fslogger-yaml fslogger-yaml.c

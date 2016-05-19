@@ -1,23 +1,18 @@
 /*
  * fslogger-yaml.c
  *
- * A patched version of Amit Singh's fslogger utility, which logs file system
- * events in OS X.
- * Patched again to add YAML functionality. Don C. Weber (@cutaway)
- *     Compiled and tested on Mac OS X 10.11.4
+ * A version of fslogger that outputs file information in YAML format. This
+ * code is a modification of Eric Walkingshaw's fslogger which is a patched
+ * version of Amit Singh's fslogger utility.
  *
- * This version fixes a small bug where four characters were missing from
- * the beginning of each file path. It also eliminates a compiler warning.
+ * Author: Don C. Weber (@cutaway)
  *
- * To compile:
- * (adapted from http://www.jitsc.co.uk/blog/programming/bash-pipe-weirdness-using-fslogger/)
+ * Compiled and tested on Mac OS X 10.11.4
  *
- * > mkdir fslogger
- * > cd fslogger
- * > curl -O https://gist.github.com/walkie/6282157/raw/fslogger.c
+ * > git clone https://github.com/cutaway/fslogger-yaml.git
+ * > cd fslogger-yaml
  * > git clone https://github.com/opensource-apple/xnu.git xnu
- * > gcc -I./xnu/bsd -Wall -o fslogger fslogger.c
- *
+ * > gcc -I./xnu/bsd -Wall -o fslogger-yaml fslogger-yaml.c
  *
  * Original file header:
  *
@@ -26,10 +21,6 @@
  *
  * Source released under the GNU GENERAL PUBLIC LICENSE (GPL) Version 2.0.
  * See http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt for details.
- *
- * Compile (Mac OS X 10.11.x only) as follows:
- *
- * gcc -I/path/to/xnu/bsd -Wall -o fslogger fslogger.c
  *
  */
 
@@ -143,6 +134,7 @@ main(int argc, char **argv)
     int32_t arg_id;
     int     fd, clonefd = -1;
     int     i, j, eoff, off, ret;
+    FILE*   onf;
 
     kfs_event_arg_t *kea;
     struct           fsevent_clone_args fca;
@@ -167,27 +159,31 @@ main(int argc, char **argv)
                          FSE_REPORT,  // FSE_XATTR_REMOVED,
                      };
 
-    if (argc != 1) {
+    // Print usage if too many arguments or not root
+    if ((argc > 2) || (geteuid() != 0)){
         fprintf(stderr, "%s (%s)\n", PROGNAME, PROGVERS);
-        fprintf(stderr, "Copyright (c) 2008 Amit Singh. "
-                        "All Rights Reserved.\n");
         fprintf(stderr, "File system change logger for Mac OS X. Usage:\n");
-        fprintf(stderr, "\n\t%s\n\n", PROGNAME);
-        fprintf(stderr, "%s does not take any arguments. "
-                        "It must be run as root.\n\n", PROGNAME);
-        printf("Please report bugs using the following contact information:\n"
-           "<URL:http://www.osxbook.com/software/bugs/>\n");
+        fprintf(stderr, "\n\tsudo ./%s [output file]\n\n", PROGNAME);
+        fprintf(stderr, "It must be run as root using sudo.\n\n");
 
         exit(1);
         exit(1);
     }
 
-    if (geteuid() != 0) {
-        fprintf(stderr, "You must be root to run %s. Try again using 'sudo'.\n", PROGNAME);
-        exit(1);
+    if (argc == 2) {
+        onf = fopen(argv[1],"w");
+        if (onf == NULL){
+            fprintf(stderr, "Cannot open output file %s.\n\n",argv[1]);
+            exit(1);
+        }
     }
 
-    setbuf(stdout, NULL);
+    if (argc == 1){
+        onf = stdout;
+    }
+
+    //setbuf(stdout, NULL);
+    setbuf(onf, NULL);
 
     if ((fd = open(DEV_FSEVENTS, O_RDONLY)) < 0) {
         perror("open");
@@ -205,8 +201,9 @@ main(int argc, char **argv)
     }
 
     close(fd);
-    //printf("%YAML 1.2\n");
-    printf("#fsevents device cloned (fd %d)\n#fslogger ready\n", clonefd);
+
+    //YAML comments lines start with '#'. Use this for debug and status statements
+    fprintf(onf,"#fsevents device cloned (fd %d)\n#fslogger ready\n", clonefd);
 
     if ((ret = ioctl(clonefd, FSEVENTS_WANT_EXTENDED_INFO, NULL)) < 0) {
         perror("ioctl");
@@ -217,7 +214,7 @@ main(int argc, char **argv)
     while (1) { // event processing loop
 
         if ((ret = read(clonefd, buffer, FSEVENT_BUFSIZ)) > 0)
-            printf("# => received %d bytes\n", ret);
+            fprintf(onf, "# => received %d bytes\n", ret);
 
         off = 0;
 
@@ -227,15 +224,12 @@ main(int argc, char **argv)
 
             off += sizeof(int32_t) + sizeof(pid_t); // type + pid
 
-            printf("---\n");
+            fprintf(onf, "---\n");
 
             if (kfse->type == FSE_EVENTS_DROPPED) { // special event
-                //printf("# Event\n");
-                //printf("  %-14s = %s\n", "type", "EVENTS DROPPED");
-                //printf("  %-14s = %d\n", "pid", kfse->pid);
-                printf("Event:\n");
-                printf(" %s = %s\n", "type", "EVENTS DROPPED");
-                printf(" %s = %d\n", "pid", kfse->pid);
+                fprintf(onf, "Event:\n");
+                fprintf(onf, " %s = %s\n", "type", "EVENTS DROPPED");
+                fprintf(onf, " %s = %d\n", "pid", kfse->pid);
                 off += sizeof(u_int16_t); // FSE_ARG_DONE: sizeof(type)
                 continue;
             }
@@ -244,29 +238,24 @@ main(int argc, char **argv)
             uint32_t aflags = FSE_GET_FLAGS(kfse->type);
 
             if ((atype < FSE_MAX_EVENTS) && (atype >= -1)) {
-                //printf("# Event\n");
-                //printf("  %-14s = %s", "type", kfseNames[atype]);
-                printf("Event:\n");
-                printf(" %s: %s", "type", kfseNames[atype]);
+                fprintf(onf, "Event:\n");
+                fprintf(onf, " %s: %s", "type", kfseNames[atype]);
                 if (aflags & FSE_COMBINED_EVENTS) {
-                    printf("%s", ", combined events");
+                    fprintf(onf,"%s", ", combined events");
                 }
                 if (aflags & FSE_CONTAINS_DROPPED_EVENTS) {
-                    printf("%s", ", contains dropped events");
+                    fprintf(onf, "%s", ", contains dropped events");
                 }
-                printf("\n");
+                fprintf(onf,"\n");
             } else { // should never happen
-                //printf("This may be a program bug (type = %d).\n", atype);
-                printf("# This may be a program bug (type = %d).\n", atype);
+                fprintf(onf, "# This may be a program bug (type = %d).\n", atype);
                 exit(1);
             }
 
-            //printf("  %-14s = %d (%s)\n", "pid", kfse->pid,
-            printf(" %s: %d\n", "pid", kfse->pid);
-            printf(" %s: %s\n", "pname", get_proc_name(kfse->pid));
+            fprintf(onf, " %s: %d\n", "pid", kfse->pid);
+            fprintf(onf, " %s: %s\n", "pname", get_proc_name(kfse->pid));
 
-            //printf("  # Details\n    # %-14s%4s  %s\n", "type", "len", "data");
-            printf("Details:\n");
+            fprintf(onf, "Details:\n");
 
             kea = kfse->args; 
             i = 0;
@@ -277,12 +266,11 @@ main(int argc, char **argv)
                 i++;
 
                 if (kea->type == FSE_ARG_DONE) { // no more arguments
-                    //printf("    %s (%#x)\n", "FSE_ARG_DONE", kea->type);
-                    printf(" %s:\n", "FSE_ARG_DONE");
+                    fprintf(onf, " %s:\n", "FSE_ARG_DONE");
                     // Added Length for FSE_ARG_DONE to be consistent with other values
-                    printf("   %s: %d\n", "len", 0);
+                    fprintf(onf, "   %s: %d\n", "len", 0);
                     // Added Type for FSE_ARG_DONE to be consistent with other values
-                    printf("   %s: %d\n", "type", kea->type);
+                    fprintf(onf, "   %s: %d\n", "type", kea->type);
                     off += sizeof(u_int16_t);
                     break;
                 }
@@ -291,55 +279,46 @@ main(int argc, char **argv)
                 off += eoff;
 
                 arg_id = (kea->type > FSE_MAX_ARGS) ? 0 : kea->type;
-                //printf("    %-16s%4hd  ", kfseArgNames[arg_id], kea->len);
-                printf(" %s:\n", kfseArgNames[arg_id]);
-                printf("   %s: %d\n", "len", kea->len);
+                fprintf(onf, " %s:\n", kfseArgNames[arg_id]);
+                fprintf(onf, "   %s: %d\n", "len", kea->len);
 
                 switch (kea->type) { // handle based on argument type
 
                 case FSE_ARG_VNODE:  // a vnode (string) pointer
                     is_fse_arg_vnode = 1;
-                    //printf("%-6s = %s\n", "path", (char *)&(kea->data.vp));
-                    printf("   %s: %s\n", "path", (char *)&(kea->data.vp));
+                    fprintf(onf, "   %s: %s\n", "path", (char *)&(kea->data.vp));
                     break;
 
                 case FSE_ARG_STRING: // a string pointer
-                    //printf("%-6s = %s\n", "string", (char *)&(kea->data.str)-4);
-                    printf("   %s: %s\n", "string", (char *)&(kea->data.str)-4);
+                    fprintf(onf, "   %s: %s\n", "string", (char *)&(kea->data.str)-4);
                     break;
 
                 case FSE_ARG_INT32:
-                    //printf("%-6s = %d\n", "int32", kea->data.int32);
-                    printf("   %s: %d\n", "int32", kea->data.int32);
+                    fprintf(onf, "   %s: %d\n", "int32", kea->data.int32);
                     break;
 
                 case FSE_ARG_RAW: // a void pointer
-                    //printf("%-6s = ", "ptr");
-                    printf("   %s: ", "ptr");
+                    fprintf(onf, "   %s: ", "ptr");
                     for (j = 0; j < kea->len; j++)
-                        printf("%02x ", ((char *)kea->data.ptr)[j]);
-                    printf("\n");
+                        fprintf(onf, "%02x ", ((char *)kea->data.ptr)[j]);
+                    fprintf(onf, "\n");
                     break;
 
                 case FSE_ARG_INO: // an inode number
-                    //printf("%-6s = %d\n", "ino", (int)kea->data.ino);
-                    printf("   %s: %d\n", "ino", (int)kea->data.ino);
+                    fprintf(onf, "   %s: %d\n", "ino", (int)kea->data.ino);
                     break;
 
                 case FSE_ARG_UID: // a user ID
                     p = getpwuid(kea->data.uid);
-                    //printf("%-6s = %d (%s)\n", "uid", kea->data.uid, (p) ? p->pw_name : "?");
-                    printf("   %s: %d (%s)\n", "uid", kea->data.uid, (p) ? p->pw_name : "?");
+                    fprintf(onf, "   %s: %d (%s)\n", "uid", kea->data.uid, (p) ? p->pw_name : "?");
                     break;
 
                 case FSE_ARG_DEV: // a file system ID or a device number
                     if (is_fse_arg_vnode) {
-                        //printf("%-6s = %#08x\n", "fsid", kea->data.dev);
-                        printf("   %s: %#08x\n", "fsid", kea->data.dev);
+                        fprintf(onf, "   %s: %#08x\n", "fsid", kea->data.dev);
                         is_fse_arg_vnode = 0;
                     } else {
-                        //printf("%-6s = %#08x (major %u, minor %u)\n", "dev", kea->data.dev, major(kea->data.dev), minor(kea->data.dev));
-                        printf("   %s: %#08x (major %u, minor %u)\n", "dev", kea->data.dev, major(kea->data.dev), minor(kea->data.dev));
+                        fprintf(onf, "   %s: %#08x (major %u, minor %u)\n", "dev", kea->data.dev, major(kea->data.dev), minor(kea->data.dev));
                     }
                     break;
 
@@ -348,31 +327,27 @@ main(int argc, char **argv)
                     va_type = (kea->data.mode & 0xfffff000);
                     strmode(va_mode, fileModeString);
                     va_type = iftovt_tab[(va_type & S_IFMT) >> 12];
-                    //printf("%-6s = %s (%#08x, vnode type %s)", "mode", fileModeString, kea->data.mode, (va_type < VTYPE_MAX) ?  vtypeNames[va_type] : "?");
-                    printf("   %s: %s (%#08x, vnode type %s)", "mode", fileModeString, kea->data.mode, (va_type < VTYPE_MAX) ?  vtypeNames[va_type] : "?");
+                    fprintf(onf, "   %s: %s (%#08x, vnode type %s)", "mode", fileModeString, kea->data.mode, (va_type < VTYPE_MAX) ?  vtypeNames[va_type] : "?");
                     if (kea->data.mode & FSE_MODE_HLINK) {
-                        printf("%s", ", hard link");
+                        fprintf(onf, "%s", ", hard link");
                     }
                     if (kea->data.mode & FSE_MODE_LAST_HLINK) {
-                        printf("%s", ", link count zero now");
+                        fprintf(onf, "%s", ", link count zero now");
                     }
-                    printf("\n");
+                    fprintf(onf, "\n");
                     break;
 
                 case FSE_ARG_GID: // a group ID
                     g = getgrgid(kea->data.gid);
-                    //printf("%-6s = %d (%s)\n", "gid", kea->data.gid, (g) ? g->gr_name : "?");
-                    printf("   %s: %d (%s)\n", "gid", kea->data.gid, (g) ? g->gr_name : "?");
+                    fprintf(onf, "   %s: %d (%s)\n", "gid", kea->data.gid, (g) ? g->gr_name : "?");
                     break;
 
                 case FSE_ARG_INT64: // timestamp
-                    //printf("%-6s = %llu\n", "tstamp", kea->data.timestamp);
-                    printf("   %s: %llu\n", "tstamp", kea->data.timestamp);
+                    fprintf(onf, "   %s: %llu\n", "tstamp", kea->data.timestamp);
                     break;
 
                 default:
-                    //printf("%-6s = ?\n", "unknown");
-                    printf("   %s = ?\n", "unknown");
+                    fprintf(onf, "   %s = ?\n", "unknown");
                     break;
                 }
 
@@ -382,6 +357,11 @@ main(int argc, char **argv)
     } // forever
 
     close(clonefd);
+
+    // Only close output file if it is not stdout
+    if (argc == 2) {
+        fclose(onf);
+    }
 
     exit(0);
 }

@@ -21,8 +21,8 @@
 
 // Socket Settings
 #define MAX_IP 15
-#define MAX_INPUT 512  \* Needs to be large enough to handle full path and file names *\
-#define MAX_SEND 65000 \* This is probably way to big. But, just in case *\
+#define MAX_DATA 512
+#define MAX_SEND 65000
 extern char    ip[MAX_IP];
 extern int     port;
 

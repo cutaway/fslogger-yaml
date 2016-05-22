@@ -5,6 +5,10 @@ Patched version of fslogger to output data in YAML format. Current versions of f
   * Requires [OpenSource XNU](https://github.com/opensource-apple/xnu) to compile. No need to build, just run the compilation line in the build instructions.
 * [fswatch](https://github.com/emcrisostomo/fswatch) - a similar project that might meet your needs.
   * [FSW](https://github.com/emcrisostomo/fsw) was created to replace fswatch but then they merged and fswatch became primary, again.
+* [fs_usage](http://ss64.com/osx/fs_usage.html) - a tool that outputs detailed information about file modifications, network connections, and other important OS activity (yes, I should be looking at this).
+  * [fs_usage.c](http://opensource.apple.com/source/system_cmds/system_cmds-496/fs_usage.tproj/fs_usage.c) - Did I mention it is open source? 
+  * [Top 10 DTrace scripts for Mac OS X](http://dtrace.org/blogs/brendan/2011/10/10/top-10-dtrace-scripts-for-mac-os-x/) - great tools for gathering data about OS events
+    * [Dtrace broken under El Capitan](http://jimtechstuff.blogspot.com/2015/10/dtrace-broken-under-el-capitan.html) - of course some of these are currently limited because of changes to Dtrace in El Capitan
 
 ## Compile fslogger-yaml
 
@@ -13,6 +17,7 @@ Compiling requires Apple's [OpenSource XNU](https://github.com/opensource-apple/
 ```bash
 cutaway> gcc -I./xnu/bsd -Wall -o fslogger-yaml fslogger-yaml.c
 ```
+NOTE: There may be some security-related warnings. Input to these functions should be safe.
 
 ## Usage
 Data is output to STDOUT.
@@ -30,6 +35,11 @@ Data is output to the file "test-output.yaml".
 cutaway> sudo ./fslogger-yaml test-output.yaml
 ```
 
+Data is output to the a remote system using UDP.
+```bash
+cutaway> sudo ./fslogger-yaml -u -h 192.168.1.5 -p 12345
+```
+
 ## Parsing with fslogger-yaml-python
 Python parser currently only provides examples of outputing Process IDs, Process Names, and File names.
 
@@ -43,9 +53,8 @@ Writing to a file on the system that you are monitoring changes can lead to conc
 One alternative is to write the output of fslogger-yaml to a separate, appropriately prepared volume. This is outlined in the [FSEvent documentation](
 https://developer.apple.com/library/mac/documentation/Darwin/Conceptual/FSEvents_ProgGuide/FileSystemEventSecurity/FileSystemEventSecurity.html#//apple_ref/doc/uid/TP40005289-CH6-SW1).
 
+### Preventing File System Event Storage
 ```
-Preventing File System Event Storage
-
 In some cases, the contents of a volume are sufficiently secret that it is not appropriate to log them. To disable logging on a per-volume basis (for creating a backup volume, for example), you must do the following:
 
 Create a .fseventsd directory at the top level of the volume.
@@ -54,6 +63,7 @@ So if your volume is mounted at /Volumes/MyDisk, you would create an empty file 
 ```
 
 ## TODO
+* Review fs_usage.c and see if we can provide any improvements for limiting outputs, formatting, or remote logging
 * Update python parser to provide more functionality and output useful information.
 * Add ruby parser <- John H. Sawyer?
 

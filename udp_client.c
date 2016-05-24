@@ -20,7 +20,7 @@ char ip[MAX_IP] = "127.0.0.1";
 int  port       = 12345;
 
 void set_dest(char *ip_addr, int dport){
-    strncpy(ip,ip_addr,MAX_IP);
+    strncpy(ip,ip_addr,MAX_IP - 1);
     port = dport;
 }
 

@@ -20,7 +20,7 @@
 #include <string.h>
 
 // Socket Settings
-#define MAX_IP 15
+#define MAX_IP 16
 #define MAX_DATA 512
 #define MAX_SEND 65000
 extern char    ip[MAX_IP];

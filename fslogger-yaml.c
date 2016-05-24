@@ -155,7 +155,7 @@ main(int argc, char **argv)
     char    msg[MAX_SEND];
     int     c;
     int     udp           = 0;
-    char    *fname        = "";
+    char    fname[MAX_FILENAME] = "";
     char    raddr[MAX_IP] = "127.0.0.1";
     int     rport         = 12345;
 
@@ -193,10 +193,11 @@ main(int argc, char **argv)
     while ((c = getopt (argc, argv, "uf:h:p:")) != -1)
         switch (c){
             case 'f':
-                strncpy(fname,optarg,MAX_FILENAME);
+                strncpy(fname,optarg,MAX_FILENAME - 1);
+                    
                 onf = fopen(fname,"w");
                 if (onf == NULL){
-                    fprintf(stderr, "Cannot open output file %s.\n\n",argv[1]);
+                    fprintf(stderr, "Cannot open output file %s.\n\n",optarg);
                     usage();
                     exit(1);
                 }
@@ -216,6 +217,8 @@ main(int argc, char **argv)
                     usage();
                     exit(1);
                 }
+                usage();
+                exit(1);
         }
 
     //setbuf(stdout, NULL);

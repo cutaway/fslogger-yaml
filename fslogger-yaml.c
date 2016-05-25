@@ -17,10 +17,6 @@
  * > git clone https://github.com/opensource-apple/xnu.git xnu
  * > gcc -I./xnu/bsd -Wall -o fslogger-yaml udp_client.c fslogger-yaml.c
  *
- * NOTE: Compilation will produce security warnings. The parameters inputted
- * into these functions are limited in the preceeding functions and "should"
- * be secure.
- *
  * Original file header:
  *
  * Copyright (c) 2008 Amit Singh (osxbook.com).
@@ -251,7 +247,7 @@ main(int argc, char **argv)
     if (udp){
         send_packet(msg, strlen(msg));
     } else {
-        fprintf(onf,msg);
+        fprintf(onf,"%s",msg);
     }
 
     if ((ret = ioctl(clonefd, FSEVENTS_WANT_EXTENDED_INFO, NULL)) < 0) {
@@ -267,7 +263,7 @@ main(int argc, char **argv)
             if (udp){
                 send_packet(msg, strlen(msg));
             } else {
-                fprintf(onf, msg);
+                fprintf(onf,"%s", msg);
             }
         }
 
@@ -283,7 +279,7 @@ main(int argc, char **argv)
             if (udp){
                 send_packet(msg, strlen(msg));
             } else {
-                fprintf(onf, msg);
+                fprintf(onf,"%s", msg);
             }
 
             if (kfse->type == FSE_EVENTS_DROPPED) { // special event
@@ -294,7 +290,7 @@ main(int argc, char **argv)
                 if (udp){
                     send_packet(msg, strlen(msg));
                 } else {
-                    fprintf(onf, msg);
+                    fprintf(onf,"%s", msg);
                 }
 
                 off += sizeof(u_int16_t); // FSE_ARG_DONE: sizeof(type)
@@ -326,7 +322,7 @@ main(int argc, char **argv)
             if (udp){
                 send_packet(msg, strlen(msg));
             } else {
-                fprintf(onf, msg);
+                fprintf(onf,"%s", msg);
             }
 
             snprintf(msg, MAX_DATA, "Details:\n");
@@ -431,7 +427,7 @@ main(int argc, char **argv)
             if (udp){
                 send_packet(msg, strlen(msg));
             } else {
-                fprintf(onf, msg);
+                fprintf(onf,"%s", msg);
             }
         } // for each event
     } // forever

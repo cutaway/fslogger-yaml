@@ -17,7 +17,6 @@ Compiling requires Apple's [OpenSource XNU](https://github.com/opensource-apple/
 ```bash
 cutaway> gcc -I./xnu/bsd -Wall -o fslogger-yaml udp_client.c fslogger-yaml.c
 ```
-NOTE: There may be some security-related warnings. Input to these functions should be safe.
 
 ## Usage
 Data is output to STDOUT.

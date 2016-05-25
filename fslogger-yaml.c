@@ -17,6 +17,10 @@
  * > git clone https://github.com/opensource-apple/xnu.git xnu
  * > gcc -I./xnu/bsd -Wall -o fslogger-yaml udp_client.c fslogger-yaml.c
  *
+ * Testing UDP functionality use default settings and set up NetCat listener
+ *
+ * > nc -ul 127.0.0.1 12345 >test_output_udp.yaml
+ *
  * Original file header:
  *
  * Copyright (c) 2008 Amit Singh (osxbook.com).
@@ -221,7 +225,8 @@ main(int argc, char **argv)
     setbuf(onf, NULL);
 
     //Set UDP Socket
-    set_dest("127.0.0.1", 12345);
+    //set_dest("127.0.0.1", 12345);
+    set_dest(raddr, rport);
     set_sock();
 
     if ((fd = open(DEV_FSEVENTS, O_RDONLY)) < 0) {

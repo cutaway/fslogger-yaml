@@ -21,7 +21,7 @@
 
 // Socket Settings
 #define MAX_IP 16
-#define MAX_DATA 512
+#define MAX_DATA 1024
 #define MAX_SEND 65000
 extern char    ip[MAX_IP];
 extern int     port;

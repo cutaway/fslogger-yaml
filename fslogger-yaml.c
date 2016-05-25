@@ -341,6 +341,11 @@ main(int argc, char **argv)
                     snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "len", 0);
                     // Added Type for FSE_ARG_DONE to be consistent with other values
                     snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "type", kea->type);
+                    if (udp){
+                        send_packet(msg, strlen(msg));
+                    } else {
+                        fprintf(onf,"%s", msg);
+                    }
                     off += sizeof(u_int16_t);
                     break;
                 }
@@ -360,7 +365,8 @@ main(int argc, char **argv)
                     break;
 
                 case FSE_ARG_STRING: // a string pointer
-                    snprintf(msg, MAX_DATA, "%s   %s: %s\n", msg, "string", (char *)&(kea->data.str)-4);
+                    // Added double quotes to protect strings with ":"s 
+                    snprintf(msg, MAX_DATA, "%s   %s: \"%s\"\n", msg, "string", (char *)&(kea->data.str)-4);
                     break;
 
                 case FSE_ARG_INT32:

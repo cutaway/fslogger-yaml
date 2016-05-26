@@ -253,6 +253,7 @@ main(int argc, char **argv)
         send_packet(msg, strlen(msg));
     } else {
         fprintf(onf,"%s",msg);
+        fflush(onf);
     }
 
     if ((ret = ioctl(clonefd, FSEVENTS_WANT_EXTENDED_INFO, NULL)) < 0) {
@@ -269,6 +270,7 @@ main(int argc, char **argv)
                 send_packet(msg, strlen(msg));
             } else {
                 fprintf(onf,"%s", msg);
+                fflush(onf);
             }
         }
 
@@ -285,6 +287,7 @@ main(int argc, char **argv)
                 send_packet(msg, strlen(msg));
             } else {
                 fprintf(onf,"%s", msg);
+                fflush(onf);
             }
 
             if (kfse->type == FSE_EVENTS_DROPPED) { // special event
@@ -296,6 +299,7 @@ main(int argc, char **argv)
                     send_packet(msg, strlen(msg));
                 } else {
                     fprintf(onf,"%s", msg);
+                    fflush(onf);
                 }
 
                 off += sizeof(u_int16_t); // FSE_ARG_DONE: sizeof(type)
@@ -328,6 +332,7 @@ main(int argc, char **argv)
                 send_packet(msg, strlen(msg));
             } else {
                 fprintf(onf,"%s", msg);
+                fflush(onf);
             }
 
             snprintf(msg, MAX_DATA, "Details:\n");
@@ -350,6 +355,7 @@ main(int argc, char **argv)
                         send_packet(msg, strlen(msg));
                     } else {
                         fprintf(onf,"%s", msg);
+                        fflush(onf);
                     }
                     off += sizeof(u_int16_t);
                     break;
@@ -439,6 +445,7 @@ main(int argc, char **argv)
                 send_packet(msg, strlen(msg));
             } else {
                 fprintf(onf,"%s", msg);
+                fflush(onf);
             }
         } // for each event
     } // forever

@@ -377,7 +377,9 @@ main(int argc, char **argv)
 
                 case FSE_ARG_STRING: // a string pointer
                     // Added double quotes to protect strings with ":"s 
-                    snprintf(msg, MAX_DATA, "%s   %s: \"%s\"\n", msg, "string", (char *)&(kea->data.str)-4);
+                    //snprintf(msg, MAX_DATA, "%s   %s: \"%s\"\n", msg, "string", (char *)&(kea->data.str)-4);
+                    // Actually, to handle "\" it needs to be a single quote
+                    snprintf(msg, MAX_DATA, "%s   %s: \'%s\'\n", msg, "string", (char *)&(kea->data.str)-4);
                     break;
 
                 case FSE_ARG_INT32:
@@ -440,13 +442,6 @@ main(int argc, char **argv)
 
                 kea = (kfs_event_arg_t *)((char *)kea + eoff); // next
             } // for each argument
-
-            if (udp){
-                send_packet(msg, strlen(msg));
-            } else {
-                fprintf(onf,"%s", msg);
-                fflush(onf);
-            }
         } // for each event
     } // forever
 

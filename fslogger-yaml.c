@@ -154,7 +154,9 @@ main(int argc, char **argv)
     FILE*   onf;
     char    msg[MAX_SEND];
     int     c;
+    int     mlen          = 0;
     int     udp           = 0;
+    int     det           = 0;
     char    fname[MAX_FILENAME] = "";
     char    raddr[MAX_IP] = "127.0.0.1";
     int     rport         = 12345;
@@ -277,24 +279,34 @@ main(int argc, char **argv)
         off = 0;
 
         while (off < ret) { // process one or more events received
+        
+            // Start message over
+            mlen = 0;
+            printf("%s\n",msg);
 
             struct kfs_event *kfse = (struct kfs_event *)((char *)buffer + off);
 
             off += sizeof(int32_t) + sizeof(pid_t); // type + pid
 
-            snprintf(msg, MAX_DATA, "---\n");
+            //snprintf(msg, MAX_DATA, "---\n");
+            mlen += snprintf(msg + mlen, MAX_DATA, "---\n");
+            /*
             if (udp){
                 send_packet(msg, strlen(msg));
             } else {
                 fprintf(onf,"%s", msg);
                 fflush(onf);
-            }
+            }*/
 
             if (kfse->type == FSE_EVENTS_DROPPED) { // special event
-                snprintf(msg, MAX_DATA, "Event\n");
+                //snprintf(msg, MAX_DATA, "Event\n");
+                mlen += snprintf(msg + mlen, MAX_DATA, "Event\n");
                 //Use snprintf for formatting to permit concantenting the message together
-                snprintf(msg, MAX_DATA, "%s %s = %s\n", msg, "type", "EVENTS DROPPED");
-                snprintf(msg, MAX_DATA, "%s %s = %d\n", msg, "pid", kfse->pid);
+                //snprintf(msg, MAX_DATA, "%s %s = %s\n", msg, "type", "EVENTS DROPPED");
+                //snprintf(msg, MAX_DATA, "%s %s = %d\n", msg, "pid", kfse->pid);
+                mlen += snprintf(msg + mlen, MAX_DATA, " %s = %s\n", "type", "EVENTS DROPPED");
+                mlen += snprintf(msg + mlen, MAX_DATA, " %s = %d\n", "pid", kfse->pid);
+                // Special event with continue. So send data
                 if (udp){
                     send_packet(msg, strlen(msg));
                 } else {
@@ -310,32 +322,48 @@ main(int argc, char **argv)
             uint32_t aflags = FSE_GET_FLAGS(kfse->type);
 
             if ((atype < FSE_MAX_EVENTS) && (atype >= -1)) {
-                snprintf(msg, MAX_DATA, "Event:\n");
-                snprintf(msg, MAX_DATA, "%s %s: %s", msg, "type", kfseNames[atype]);
+                //snprintf(msg, MAX_DATA, "Event:\n");
+                mlen += snprintf(msg + mlen, MAX_DATA, "Event:\n");
+                //snprintf(msg, MAX_DATA, "%s %s: %s", msg, "type", kfseNames[atype]);
+                mlen += snprintf(msg + mlen, MAX_DATA, " %s: %s", "type", kfseNames[atype]);
                 if (aflags & FSE_COMBINED_EVENTS) {
-                    snprintf(msg, MAX_DATA,"%s%s", msg, ", combined events");
+                    //snprintf(msg, MAX_DATA,"%s%s", msg, ", combined events");
+                    mlen += snprintf(msg + mlen, MAX_DATA,"%s", ", combined events");
                 }
                 if (aflags & FSE_CONTAINS_DROPPED_EVENTS) {
-                    snprintf(msg, MAX_DATA, "%s%s", msg, ", contains dropped events");
+                    //snprintf(msg, MAX_DATA, "%s%s", msg, ", contains dropped events");
+                    mlen += snprintf(msg + mlen, MAX_DATA, "%s", ", contains dropped events");
                 }
-                snprintf(msg,MAX_DATA,"%s\n",msg);
+                //snprintf(msg,MAX_DATA,"%s\n",msg);
+                mlen += snprintf(msg + mlen,MAX_DATA, "%s","\n");
 
 
             } else { // should never happen
-                fprintf(onf, "# This may be a program bug (type = %d).\n", atype);
+                //fprintf(onf, "# This may be a program bug (type = %d).\n", atype);
+                mlen += snprintf(msg + mlen, MAX_DATA, "# This may be a program bug (type = %d).\n", atype);
+                // Special event with exit. So send data
+                if (udp){
+                    send_packet(msg, strlen(msg));
+                } else {
+                    fprintf(onf,"%s", msg);
+                    fflush(onf);
+                }
                 exit(1);
             }
 
-            snprintf(msg, MAX_DATA, "%s %s: %d\n", msg, "pid", kfse->pid);
-            snprintf(msg, MAX_DATA, "%s %s: %s\n",msg, "pname", get_proc_name(kfse->pid));
-            if (udp){
+            //snprintf(msg, MAX_DATA, "%s %s: %d\n", msg, "pid", kfse->pid);
+            //snprintf(msg, MAX_DATA, "%s %s: %s\n",msg, "pname", get_proc_name(kfse->pid));
+            mlen += snprintf(msg + mlen, MAX_DATA, " %s: %d\n", "pid", kfse->pid);
+            mlen += snprintf(msg + mlen, MAX_DATA, " %s: %s\n", "pname", get_proc_name(kfse->pid));
+            /*if (udp){
                 send_packet(msg, strlen(msg));
             } else {
                 fprintf(onf,"%s", msg);
                 fflush(onf);
-            }
+            }*/
 
-            snprintf(msg, MAX_DATA, "Details:\n");
+            //snprintf(msg, MAX_DATA, "Details:\n");
+            mlen += snprintf(msg + mlen, MAX_DATA, "%s", "Details:\n");
 
             kea = kfse->args; 
             i = 0;
@@ -346,17 +374,23 @@ main(int argc, char **argv)
                 i++;
 
                 if (kea->type == FSE_ARG_DONE) { // no more arguments
-                    snprintf(msg, MAX_DATA, "%s %s:\n", msg, "FSE_ARG_DONE");
+                    //snprintf(msg, MAX_DATA, "%s %s:\n", msg, "FSE_ARG_DONE");
+                    mlen += snprintf(msg + mlen, MAX_DATA, " %s:\n", "FSE_ARG_DONE");
                     // Added Length for FSE_ARG_DONE to be consistent with other values
-                    snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "len", 0);
+                    //snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "len", 0);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d\n", "len", 0);
                     // Added Type for FSE_ARG_DONE to be consistent with other values
-                    snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "type", kea->type);
+                    //snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "type", kea->type);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d\n", "type", kea->type);
+
+                    //This should be the only time to send data for a YAML doc which is a full FSEVENT
                     if (udp){
                         send_packet(msg, strlen(msg));
                     } else {
                         fprintf(onf,"%s", msg);
                         fflush(onf);
                     }
+                    det = 0;
                     off += sizeof(u_int16_t);
                     break;
                 }
@@ -365,49 +399,66 @@ main(int argc, char **argv)
                 off += eoff;
 
                 arg_id = (kea->type > FSE_MAX_ARGS) ? 0 : kea->type;
-                snprintf(msg, MAX_DATA, "%s %s:\n", msg, kfseArgNames[arg_id]);
-                snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "len", kea->len);
+                //snprintf(msg, MAX_DATA, "%s %s:\n", msg, kfseArgNames[arg_id]);
+                //snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "len", kea->len);
+                // Do no put detail marker on timestamp
+                if (arg_id == 5){
+                    mlen += snprintf(msg + mlen, MAX_DATA, " %s:\n", kfseArgNames[arg_id]);
+                } else {
+                    mlen += snprintf(msg + mlen, MAX_DATA, " %s_%d:\n", kfseArgNames[arg_id],det);
+                }
+                mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d\n", "len", kea->len);
 
                 switch (kea->type) { // handle based on argument type
 
                 case FSE_ARG_VNODE:  // a vnode (string) pointer
                     is_fse_arg_vnode = 1;
-                    snprintf(msg, MAX_DATA, "%s   %s: %s\n", msg, "path", (char *)&(kea->data.vp));
+                    //snprintf(msg, MAX_DATA, "%s   %s: %s\n", msg, "path", (char *)&(kea->data.vp));
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %s\n", "path", (char *)&(kea->data.vp));
                     break;
 
                 case FSE_ARG_STRING: // a string pointer
                     // Added double quotes to protect strings with ":"s 
                     //snprintf(msg, MAX_DATA, "%s   %s: \"%s\"\n", msg, "string", (char *)&(kea->data.str)-4);
                     // Actually, to handle "\" it needs to be a single quote
-                    snprintf(msg, MAX_DATA, "%s   %s: \'%s\'\n", msg, "string", (char *)&(kea->data.str)-4);
+                    //snprintf(msg, MAX_DATA, "%s   %s: \'%s\'\n", msg, "string", (char *)&(kea->data.str)-4);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: \'%s\'\n", "string", (char *)&(kea->data.str)-4);
                     break;
 
                 case FSE_ARG_INT32:
-                    snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "int32", kea->data.int32);
+                    //snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "int32", kea->data.int32);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d\n", "int32", kea->data.int32);
                     break;
 
                 case FSE_ARG_RAW: // a void pointer
-                    snprintf(msg, MAX_DATA, "%s   %s: ", msg, "ptr");
+                    //snprintf(msg, MAX_DATA, "%s   %s: ", msg, "ptr");
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: ", "ptr");
                     for (j = 0; j < kea->len; j++)
-                        snprintf(msg, MAX_DATA, "%s%02x ", msg, ((char *)kea->data.ptr)[j]);
-                    snprintf(msg, MAX_DATA, "%s\n", msg);
+                        //snprintf(msg, MAX_DATA, "%s%02x ", msg, ((char *)kea->data.ptr)[j]);
+                        mlen += snprintf(msg + mlen, MAX_DATA, "%02x ", ((char *)kea->data.ptr)[j]);
+                    //snprintf(msg, MAX_DATA, "%s\n", msg);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "%s", "\n");
                     break;
 
                 case FSE_ARG_INO: // an inode number
-                    snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "ino", (int)kea->data.ino);
+                    //snprintf(msg, MAX_DATA, "%s   %s: %d\n", msg, "ino", (int)kea->data.ino);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d\n", "ino", (int)kea->data.ino);
                     break;
 
                 case FSE_ARG_UID: // a user ID
                     p = getpwuid(kea->data.uid);
-                    snprintf(msg, MAX_DATA, "%s   %s: %d (%s)\n", msg, "uid", kea->data.uid, (p) ? p->pw_name : "?");
+                    //snprintf(msg, MAX_DATA, "%s   %s: %d (%s)\n", msg, "uid", kea->data.uid, (p) ? p->pw_name : "?");
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d (%s)\n", "uid", kea->data.uid, (p) ? p->pw_name : "?");
                     break;
 
                 case FSE_ARG_DEV: // a file system ID or a device number
                     if (is_fse_arg_vnode) {
-                        snprintf(msg, MAX_DATA, "%s   %s: %#08x\n", msg, "fsid", kea->data.dev);
+                        //snprintf(msg, MAX_DATA, "%s   %s: %#08x\n", msg, "fsid", kea->data.dev);
+                        mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %#08x\n", "fsid", kea->data.dev);
                         is_fse_arg_vnode = 0;
                     } else {
-                        snprintf(msg, MAX_DATA, "%s   %s: %#08x (major %u, minor %u)\n", msg, "dev", kea->data.dev, major(kea->data.dev), minor(kea->data.dev));
+                        //snprintf(msg, MAX_DATA, "%s   %s: %#08x (major %u, minor %u)\n", msg, "dev", kea->data.dev, major(kea->data.dev), minor(kea->data.dev));
+                        mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %#08x (major %u, minor %u)\n", "dev", kea->data.dev, major(kea->data.dev), minor(kea->data.dev));
                     }
                     break;
 
@@ -416,27 +467,36 @@ main(int argc, char **argv)
                     va_type = (kea->data.mode & 0xfffff000);
                     strmode(va_mode, fileModeString);
                     va_type = iftovt_tab[(va_type & S_IFMT) >> 12];
-                    snprintf(msg, MAX_DATA, "%s   %s: %s (%#08x, vnode type %s)", msg, "mode", fileModeString, kea->data.mode, (va_type < VTYPE_MAX) ?  vtypeNames[va_type] : "?");
+                    //snprintf(msg, MAX_DATA, "%s   %s: %s (%#08x, vnode type %s)", msg, "mode", fileModeString, kea->data.mode, (va_type < VTYPE_MAX) ?  vtypeNames[va_type] : "?");
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %s (%#08x, vnode type %s)", "mode", fileModeString, kea->data.mode, (va_type < VTYPE_MAX) ?  vtypeNames[va_type] : "?");
                     if (kea->data.mode & FSE_MODE_HLINK) {
-                        snprintf(msg, MAX_DATA, "%s%s", msg, ", hard link");
+                        //snprintf(msg, MAX_DATA, "%s%s", msg, ", hard link");
+                        mlen += snprintf(msg + mlen, MAX_DATA, "%s", ", hard link");
                     }
                     if (kea->data.mode & FSE_MODE_LAST_HLINK) {
-                        snprintf(msg, MAX_DATA, "%s%s", msg, ", link count zero now");
+                        //snprintf(msg, MAX_DATA, "%s%s", msg, ", link count zero now");
+                        mlen += snprintf(msg + mlen, MAX_DATA, "%s", ", link count zero now");
                     }
-                    snprintf(msg, MAX_DATA, "%s\n", msg);
+                    //snprintf(msg, MAX_DATA, "%s\n", msg);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "%s", "\n");
                     break;
 
                 case FSE_ARG_GID: // a group ID
                     g = getgrgid(kea->data.gid);
-                    snprintf(msg, MAX_DATA, "%s   %s: %d (%s)\n", msg, "gid", kea->data.gid, (g) ? g->gr_name : "?");
+                    //snprintf(msg, MAX_DATA, "%s   %s: %d (%s)\n", msg, "gid", kea->data.gid, (g) ? g->gr_name : "?");
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %d (%s)\n", "gid", kea->data.gid, (g) ? g->gr_name : "?");
+                    // This is usually the last value before everything repeats. Inc det
+                    det += 1;
                     break;
 
                 case FSE_ARG_INT64: // timestamp
-                    snprintf(msg, MAX_DATA, "%s   %s: %llu\n", msg, "tstamp", kea->data.timestamp);
+                    //snprintf(msg, MAX_DATA, "%s   %s: %llu\n", msg, "tstamp", kea->data.timestamp);
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s: %llu\n", "tstamp", kea->data.timestamp);
                     break;
 
                 default:
-                    snprintf(msg, MAX_DATA, "%s   %s = ?\n", msg, "unknown");
+                    //snprintf(msg, MAX_DATA, "%s   %s = ?\n", msg, "unknown");
+                    mlen += snprintf(msg + mlen, MAX_DATA, "   %s = ?\n", "unknown");
                     break;
                 }
 

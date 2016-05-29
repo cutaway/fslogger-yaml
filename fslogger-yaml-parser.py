@@ -2,7 +2,68 @@ import yaml as y
 import pprint as pp
 import os, sys
 
-# Return all pids
+# Return all processes
+def get_processes(data):
+    processes = {}
+    for doc in data:
+        pid   = doc['Event']['pid']
+        pname = doc['Event']['pname']
+        # Create dictionary of PIDs and process names
+        if pid in processes.keys():
+            if pname not in processes[pid]: processes[pid].append(pname)
+        else:
+            processes[pid] = []
+            processes[pid].append(pname)
+    return processes
+
+# Return all process files
+def get_process_files(data):
+    processes = {}
+    strings   = ['FSE_ARG_STRING_0','FSE_ARG_STRING_1']
+    # {pid:{pname:[file0,file1]}}
+    for doc in data:
+        pid   = doc['Event']['pid']
+        pname = doc['Event']['pname']
+        # Create dictionary of PIDs and process names
+        if pid in processes.keys():
+            if pname not in processes[pid].keys(): processes[pid][pname] = []
+        else:
+            processes[pid] = {}
+            processes[pid][pname] = []
+        for e in strings:
+            if doc['Details'].has_key(e):
+                if doc['Details'][e]['string'] not in processes[pid][pname]:
+                    processes[pid][pname].append(doc['Details'][e]['string'])
+
+    return processes
+
+# Return all process files
+def get_process_files2(data):
+    processes = {}
+    strings   = ['FSE_ARG_STRING_0','FSE_ARG_STRING_1']
+    padding   = len('FSE_CONTENT_MODIFIED')
+    # {pid:{pname:[file0,file1]}}
+    for doc in data:
+        pid   = doc['Event']['pid']
+        pname = doc['Event']['pname']
+        # Create dictionary of PIDs and process names
+        if pid in processes.keys():
+            if pname not in processes[pid].keys(): processes[pid][pname] = []
+        else:
+            processes[pid] = {}
+            processes[pid][pname] = []
+        for e in strings:
+            if doc['Details'].has_key(e):
+                #sn = doc['Event']['type'] + ": " + doc['Details'][e]['string']    
+                sn = "%s: %s" % (doc['Event']['type'].ljust(padding), doc['Details'][e]['string'])
+                #if doc['Details'][e]['string'] not in processes[pid][pname]:
+                    #processes[pid][pname].append(doc['Details'][e]['string'])
+                if sn not in processes[pid][pname]:
+                    processes[pid][pname].append(sn)
+
+    return processes
+
+# Return unique pids
 def get_pids(data):
     pids = []
     for doc in data:
@@ -11,7 +72,7 @@ def get_pids(data):
     pids = list(pids)
     return pids
 
-# Return all pnames
+# Return unique pnames
 def get_pnames(data):
     pnames = []
     for doc in data:
@@ -20,7 +81,7 @@ def get_pnames(data):
     pnames = list(pnames)
     return pnames
 
-# Return all filenames
+# Return unique filenames
 def get_filenames(data):
     files = []
     #for doc in y.load_all(d):
@@ -69,56 +130,83 @@ def fix_int64_errors(data):
 
     return [found,new_data]
 
+    
+def list_processes(data):
+    processes = get_processes(y.load_all(data))
+    print "Detected Processes:"
+    #print processes
+    for e in processes.keys():
+        print "    " + str(e) + ":",
+        print ','.join(processes[e])
+            
+def list_process_files(data):
+    print "Detect Processes and Files"
+    print 
+    #processes = get_process_files(y.load_all(data))
+    processes = get_process_files2(y.load_all(data))
+    for pid in processes.keys():
+        print str(pid) + ":"
+        for pname in processes[pid].keys():
+            print "    " + pname
+            for fn in processes[pid][pname]:
+                print "        " + fn
+
+
+# Help
+def usage():
+    print "fslogger-yaml-parser.py:  This script will take YAML output of fslogger data" 
+    print "                          and parse it for various information."
+    print ""
+    print "-f <file>:       Input file (required)"
+    print "-p:              Print process identifier numbers and a list of corresponding process names."
+    print "-n:              Print process identifier and then list the files associated with each process name."
+    print "-h:              Print help."
+    sys.exit()
 
 if __name__ == "__main__":
 
+    # Variables
+    inf             = ""
+    print_pids      = False;
+    print_files     = False;
+
+    # Process Options
+    ops = ['-f','-p','-n','-h']
+
+    while len(sys.argv) > 1:
+        op = sys.argv.pop(1)
+        if op == '-f':
+            inf = sys.argv.pop(1)
+        if op == '-p':
+            print_pids  = True
+        if op == '-n':
+            print_files = True
+        if op == '-h':
+            usage()
+        if op not in ops:
+            print "Unknown option:"
+            usage()
+
+    # Check for file
+    if not inf:
+        usage()
+
     # Import and open data file
-    inf = sys.argv[1]
     # Do not readlines as we need a full dump
     d = open(inf,'r').read()
 
     # Load YAML dataspace
     # Cannot make an object because it is a generator and it cannot be reset
-    #yd = y.load_all(d)
+    # Example: yd = y.load_all(d)
 
     # Process Data
-    try:
-        print "PIDs detected:"
-        for e in get_pids(y.load_all(d)):
-            print "   ",e
-        print ""
-
-        print "Process names detected:"
-        for e in get_pnames(y.load_all(d)):
-            print "   ",e
-        print ""
-
-        print "Files names detected:"
-        for e in get_filenames(y.load_all(d)):
-            print "   ",e
-        print ""
-    except:
-        err_check = []
-        err_check = fix_int64_errors(d)
-        if err_check[0]:
-            d = err_check[1]
-        else:
-            print "Unknown errors.\n"
-            sys.exit(1)
-
-        print "Errors detected and fixed:",err_check[0]
-        print "PIDs detected:"
-        for e in get_pids(y.load_all(d)):
-            print "   ",e
-        print ""
-
-        print "Process names detected:"
-        for e in get_pnames(y.load_all(d)):
-            print "   ",e
-        print ""
-
-        print "Files names detected:"
-        for e in get_filenames(y.load_all(d)):
-            print "   ",e
-        print ""
-
+    # Error Check
+    err_check = []
+    err_check = fix_int64_errors(d)
+    if err_check[0]:
+        # Error was detected and, hopefully, fixed
+        print "Error detected, data modified to compensate."
+        d = err_check[1]
+    
+    if print_pids: list_processes(d)
+    if print_files: list_process_files(d)

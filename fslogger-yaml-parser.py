@@ -1,11 +1,29 @@
+##########################
+# Name:       fslogger-yaml-parser.py
+# Author:     Don C. Weber
+# Start Date: 20160518
+##########################
+
 import yaml as y
 import pprint as pp
 import os, sys
 
-
 ##########################
 # Process data functions
 ##########################
+
+# Help
+def usage():
+    print "fslogger-yaml-parser.py:  This script will take YAML output of fslogger data" 
+    print "                          and parse it for various information. Multiple options"
+    print "                          can be selected."
+    print ""
+    print "-f <file>:       Input file (required)"
+    print "-p:              Print process identifier numbers and a list of corresponding process names."
+    print "-n:              Print process identifier and then list the files associated with each process name."
+    print "-t:              Print action types and then list the files associated with each action."
+    print "-h:              Print help."
+    sys.exit()
 
 # Fix FSE_ARG_INT64 Errors
 def fix_int64_errors(data):
@@ -177,18 +195,6 @@ def get_filenames(data):
     return files
 ##########################
 
-
-# Help
-def usage():
-    print "fslogger-yaml-parser.py:  This script will take YAML output of fslogger data" 
-    print "                          and parse it for various information."
-    print ""
-    print "-f <file>:       Input file (required)"
-    print "-p:              Print process identifier numbers and a list of corresponding process names."
-    print "-n:              Print process identifier and then list the files associated with each process name."
-    print "-h:              Print help."
-    sys.exit()
-
 if __name__ == "__main__":
 
     # Variables
@@ -237,6 +243,7 @@ if __name__ == "__main__":
         print "Error detected, data modified to compensate."
         d = err_check[1]
     
+    # Process according to user requests
     if print_pids:  list_processes(d)
     if print_files: list_process_files(d)
     if print_types: list_process_types(d)

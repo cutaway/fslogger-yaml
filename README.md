@@ -1,16 +1,5 @@
 # fslogger-yaml
 Patched version of fslogger to output data in YAML format. Current versions of fslogger output data in ASCII format which makes review and reporting easy but parsing difficult. YAML formatting means that other parsers can be developed to extract specific information and output in other formats. Hopefully this makes analysis easier.
-
-* [fslogger](https://gist.github.com/walkie/6282157) - an update of the [original fslogger](http://osxbook.com/software/fslogger/)
-  * Requires [OpenSource XNU](https://github.com/opensource-apple/xnu) to compile. No need to build, just run the compilation line in the build instructions.
-* [fswatch](https://github.com/emcrisostomo/fswatch) - a similar project that might meet your needs.
-  * [FSW](https://github.com/emcrisostomo/fsw) was created to replace fswatch but then they merged and fswatch became primary, again.
-* [fs_usage](http://ss64.com/osx/fs_usage.html) - a tool that outputs detailed information about file modifications, network connections, and other important OS activity (yes, I should be looking at this).
-  * [fs_usage.c](http://opensource.apple.com/source/system_cmds/system_cmds-496/fs_usage.tproj/fs_usage.c) - Did I mention it is open source? 
-  * [Top 10 DTrace scripts for Mac OS X](http://dtrace.org/blogs/brendan/2011/10/10/top-10-dtrace-scripts-for-mac-os-x/) - great tools for gathering data about OS events
-    * [Dtrace broken under El Capitan](http://jimtechstuff.blogspot.com/2015/10/dtrace-broken-under-el-capitan.html) - of course some of these are currently limited because of changes to Dtrace in El Capitan
-  * [Towards Generic Ransomware Detection](https://objective-see.com/blog/blog_0x0F.html) - an example of an updated fs_usage and OpenBSD auditd used to monitor malware file modifications.
-
 ## Compile fslogger-yaml
 
 Compiling requires Apple's [OpenSource XNU](https://github.com/opensource-apple/xnu). Clone this into the fslogger-yaml working directory and provide GCC with the BSD libraries location.
@@ -68,9 +57,20 @@ In some cases, the contents of a volume are sufficiently secret that it is not a
 Create a .fseventsd directory at the top level of the volume.
 Create an empty no_log file in that directory.
 So if your volume is mounted at /Volumes/MyDisk, you would create an empty file called /Volumes/MyDisk/.fseventsd/no_log.
-```
 
 ## TODO
 * Add ruby parser <- John H. Sawyer?
+
+## Other OSX File Activity Monitoring Methods
+
+* [fslogger](https://gist.github.com/walkie/6282157) - an update of the [original fslogger](http://osxbook.com/software/fslogger/)
+  * Requires [OpenSource XNU](https://github.com/opensource-apple/xnu) to compile. No need to build, just run the compilation line in the build instructions.
+* [fswatch](https://github.com/emcrisostomo/fswatch) - a similar project that might meet your needs.
+  * [FSW](https://github.com/emcrisostomo/fsw) was created to replace fswatch but then they merged and fswatch became primary, again.
+* [fs_usage](http://ss64.com/osx/fs_usage.html) - a tool that outputs detailed information about file modifications, network connections, and other important OS activity (yes, I should be looking at this).
+  * [fs_usage.c](http://opensource.apple.com/source/system_cmds/system_cmds-496/fs_usage.tproj/fs_usage.c) - Did I mention it is open source? 
+  * [Top 10 DTrace scripts for Mac OS X](http://dtrace.org/blogs/brendan/2011/10/10/top-10-dtrace-scripts-for-mac-os-x/) - great tools for gathering data about OS events
+    * [Dtrace broken under El Capitan](http://jimtechstuff.blogspot.com/2015/10/dtrace-broken-under-el-capitan.html) - of course some of these are currently limited because of changes to Dtrace in El Capitan
+  * [Towards Generic Ransomware Detection](https://objective-see.com/blog/blog_0x0F.html) - an example of an updated fs_usage and OpenBSD auditd used to monitor malware file modifications.
 
 

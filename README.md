@@ -9,6 +9,7 @@ Patched version of fslogger to output data in YAML format. Current versions of f
   * [fs_usage.c](http://opensource.apple.com/source/system_cmds/system_cmds-496/fs_usage.tproj/fs_usage.c) - Did I mention it is open source? 
   * [Top 10 DTrace scripts for Mac OS X](http://dtrace.org/blogs/brendan/2011/10/10/top-10-dtrace-scripts-for-mac-os-x/) - great tools for gathering data about OS events
     * [Dtrace broken under El Capitan](http://jimtechstuff.blogspot.com/2015/10/dtrace-broken-under-el-capitan.html) - of course some of these are currently limited because of changes to Dtrace in El Capitan
+  * [Towards Generic Ransomware Detection](https://objective-see.com/blog/blog_0x0F.html) - an example of an updated fs_usage and OpenBSD auditd used to monitor malware file modifications.
 
 ## Compile fslogger-yaml
 
@@ -43,14 +44,22 @@ cutaway> sudo ./fslogger-yaml -u -h 192.168.1.5 -p 12345
 Python parser currently only provides examples of outputing Process IDs, Process Names, and File names.
 
 ```bash
-cutaway> python fslogger-yaml-parser.py test-fslogger-yaml3.txt
+cutaway:> python fslogger-yaml-parser.py
+fslogger-yaml-parser.py:  This script will take YAML output of fslogger data
+                          and parse it for various information. Multiple options
+                          can be selected.
+
+-f <file>:       Input file (required)
+-p:              Print process identifier numbers and a list of corresponding process names.
+-n:              Print process identifier and then list the files associated with each process name.
+-t:              Print action types and then list the files associated with each action.
+-h:              Print help.
 ```
 
 ## Avoiding Recursive File Event Logging
 Writing to a file on the system that you are monitoring changes can lead to concerns about creating and logging file system activity. Not writing these changes can be done programmatically but this could lead to processing delays that may have a negative impact on performance. Performance issues could lead to dropped events and force Spotlight or Time Machine, which have priority over FSEvents, to perform additional actions and delay processing further.
 
-One alternative is to write the output of fslogger-yaml to a separate, appropriately prepared volume. This is outlined in the [FSEvent documentation](
-https://developer.apple.com/library/mac/documentation/Darwin/Conceptual/FSEvents_ProgGuide/FileSystemEventSecurity/FileSystemEventSecurity.html#//apple_ref/doc/uid/TP40005289-CH6-SW1).
+One alternative is to leverage fslogger-yaml's UDP output functionality. Additionally, it is also possible to write the output of fslogger-yaml to a separate, appropriately prepared volume. This is outlined in the [FSEvent documentation](https://developer.apple.com/library/mac/documentation/Darwin/Conceptual/FSEvents_ProgGuide/FileSystemEventSecurity/FileSystemEventSecurity.html#//apple_ref/doc/uid/TP40005289-CH6-SW1).
 
 ### Preventing File System Event Storage
 ```

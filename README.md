@@ -30,7 +30,8 @@ cutaway> sudo ./fslogger-yaml -u -h 192.168.1.5 -p 12345
 ```
 
 ## Parsing with fslogger-yaml-python
-Python parser currently only provides examples of outputing Process IDs, Process Names, and File names.
+Python parser provides methods to output lists of processes, files manipulated by those processes, and the types of actions performed on the files. This script provides modular functionality for use in other programs and to be easily updated with additional functionality.
+
 
 ```bash
 cutaway:> python fslogger-yaml-parser.py

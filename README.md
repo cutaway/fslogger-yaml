@@ -58,6 +58,7 @@ In some cases, the contents of a volume are sufficiently secret that it is not a
 Create a .fseventsd directory at the top level of the volume.
 Create an empty no_log file in that directory.
 So if your volume is mounted at /Volumes/MyDisk, you would create an empty file called /Volumes/MyDisk/.fseventsd/no_log.
+```
 
 ## TODO
 * Add ruby parser <- John H. Sawyer?
@@ -73,5 +74,3 @@ So if your volume is mounted at /Volumes/MyDisk, you would create an empty file 
   * [Top 10 DTrace scripts for Mac OS X](http://dtrace.org/blogs/brendan/2011/10/10/top-10-dtrace-scripts-for-mac-os-x/) - great tools for gathering data about OS events
     * [Dtrace broken under El Capitan](http://jimtechstuff.blogspot.com/2015/10/dtrace-broken-under-el-capitan.html) - of course some of these are currently limited because of changes to Dtrace in El Capitan
   * [Towards Generic Ransomware Detection](https://objective-see.com/blog/blog_0x0F.html) - an example of an updated fs_usage and OpenBSD auditd used to monitor malware file modifications.
-
-

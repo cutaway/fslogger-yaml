@@ -71,8 +71,6 @@ So if your volume is mounted at /Volumes/MyDisk, you would create an empty file 
 ```
 
 ## TODO
-* Review fs_usage.c and see if we can provide any improvements for limiting outputs, formatting, or remote logging
-* Update python parser to provide more functionality and output useful information.
 * Add ruby parser <- John H. Sawyer?
 
 

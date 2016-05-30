@@ -2,94 +2,10 @@ import yaml as y
 import pprint as pp
 import os, sys
 
-# Return all processes
-def get_processes(data):
-    processes = {}
-    for doc in data:
-        pid   = doc['Event']['pid']
-        pname = doc['Event']['pname']
-        # Create dictionary of PIDs and process names
-        if pid in processes.keys():
-            if pname not in processes[pid]: processes[pid].append(pname)
-        else:
-            processes[pid] = []
-            processes[pid].append(pname)
-    return processes
 
-# Return all process files
-def get_process_files(data):
-    processes = {}
-    strings   = ['FSE_ARG_STRING_0','FSE_ARG_STRING_1']
-    # {pid:{pname:[file0,file1]}}
-    for doc in data:
-        pid   = doc['Event']['pid']
-        pname = doc['Event']['pname']
-        # Create dictionary of PIDs and process names
-        if pid in processes.keys():
-            if pname not in processes[pid].keys(): processes[pid][pname] = []
-        else:
-            processes[pid] = {}
-            processes[pid][pname] = []
-        for e in strings:
-            if doc['Details'].has_key(e):
-                if doc['Details'][e]['string'] not in processes[pid][pname]:
-                    processes[pid][pname].append(doc['Details'][e]['string'])
-
-    return processes
-
-# Return all process files
-def get_process_files2(data):
-    processes = {}
-    strings   = ['FSE_ARG_STRING_0','FSE_ARG_STRING_1']
-    padding   = len('FSE_CONTENT_MODIFIED')
-    # {pid:{pname:[file0,file1]}}
-    for doc in data:
-        pid   = doc['Event']['pid']
-        pname = doc['Event']['pname']
-        # Create dictionary of PIDs and process names
-        if pid in processes.keys():
-            if pname not in processes[pid].keys(): processes[pid][pname] = []
-        else:
-            processes[pid] = {}
-            processes[pid][pname] = []
-        for e in strings:
-            if doc['Details'].has_key(e):
-                #sn = doc['Event']['type'] + ": " + doc['Details'][e]['string']    
-                sn = "%s: %s" % (doc['Event']['type'].ljust(padding), doc['Details'][e]['string'])
-                #if doc['Details'][e]['string'] not in processes[pid][pname]:
-                    #processes[pid][pname].append(doc['Details'][e]['string'])
-                if sn not in processes[pid][pname]:
-                    processes[pid][pname].append(sn)
-
-    return processes
-
-# Return unique pids
-def get_pids(data):
-    pids = []
-    for doc in data:
-        pids.append(doc['Event']['pid'])
-    pids = set(pids)
-    pids = list(pids)
-    return pids
-
-# Return unique pnames
-def get_pnames(data):
-    pnames = []
-    for doc in data:
-        pnames.append(doc['Event']['pname'])
-    pnames = set(pnames)
-    pnames = list(pnames)
-    return pnames
-
-# Return unique filenames
-def get_filenames(data):
-    files = []
-    #for doc in y.load_all(d):
-    for doc in data:
-        files.append(doc['Details']['FSE_ARG_STRING']['string'])
-    files = set(files)
-    files = list(files)
-    return files
+##########################
+# Process data functions
+##########################
 
 # Fix FSE_ARG_INT64 Errors
 def fix_int64_errors(data):
@@ -129,11 +45,78 @@ def fix_int64_errors(data):
             new_data += e + '\n'
 
     return [found,new_data]
-
     
+# Return all processes
+def get_processes(data):
+    processes = {}
+    for doc in data:
+        pid   = doc['Event']['pid']
+        pname = doc['Event']['pname']
+        # Create dictionary of PIDs and process names
+        if pid in processes.keys():
+            if pname not in processes[pid]: processes[pid].append(pname)
+        else:
+            processes[pid] = []
+            processes[pid].append(pname)
+    return processes
+
+    return processes
+
+# Return all process files
+def get_process_files(data):
+    processes = {}
+    strings   = ['FSE_ARG_STRING_0','FSE_ARG_STRING_1']
+    padding   = len('FSE_CONTENT_MODIFIED')
+    # {pid:{pname:[file0,file1]}}
+    for doc in data:
+        pid   = doc['Event']['pid']
+        pname = doc['Event']['pname']
+        # Create dictionary of PIDs and process names
+        if pid in processes.keys():
+            if pname not in processes[pid].keys(): processes[pid][pname] = []
+        else:
+            processes[pid] = {}
+            processes[pid][pname] = []
+        for e in strings:
+            if doc['Details'].has_key(e):
+                #sn = doc['Event']['type'] + ": " + doc['Details'][e]['string']    
+                sn = "%s: %s" % (doc['Event']['type'].ljust(padding), doc['Details'][e]['string'])
+                #if doc['Details'][e]['string'] not in processes[pid][pname]:
+                    #processes[pid][pname].append(doc['Details'][e]['string'])
+                if sn not in processes[pid][pname]:
+                    processes[pid][pname].append(sn)
+
+    return processes
+
+# Return all action types
+def get_process_types(data):
+    types     = {}
+    strings   = ['FSE_ARG_STRING_0','FSE_ARG_STRING_1']
+    padding   = len('FSE_CONTENT_MODIFIED')
+    # {pid:{pname:[file0,file1]}}
+    for doc in data:
+        pid   = doc['Event']['pid']
+        pname = doc['Event']['pname']
+        ptype = doc['Event']['type']
+        # Create dictionary of PIDs and process names
+        if ptype not in types.keys():
+            types[ptype] = [] 
+
+        for e in strings:
+            if doc['Details'].has_key(e):
+                if doc['Details'][e]['string'] not in types[ptype]:
+                    types[ptype].append(doc['Details'][e]['string'])
+
+    return types
+##########################
+
+##########################
+# Print data functions
+##########################
 def list_processes(data):
     processes = get_processes(y.load_all(data))
     print "Detected Processes:"
+    print 
     #print processes
     for e in processes.keys():
         print "    " + str(e) + ":",
@@ -142,14 +125,57 @@ def list_processes(data):
 def list_process_files(data):
     print "Detect Processes and Files"
     print 
-    #processes = get_process_files(y.load_all(data))
-    processes = get_process_files2(y.load_all(data))
+    processes = get_process_files(y.load_all(data))
     for pid in processes.keys():
         print str(pid) + ":"
         for pname in processes[pid].keys():
             print "    " + pname
             for fn in processes[pid][pname]:
                 print "        " + fn
+
+def list_process_types(data):
+    print "Detect Action Types"
+    print
+    types = get_process_types(y.load_all(data))
+    #print types
+    for action in types.keys():
+        print action + ":"
+        for fn in types[action]:
+            print "    " + fn
+        print
+##########################
+
+##########################
+# Original test functions
+##########################
+# Return unique pids
+def get_pids(data):
+    pids = []
+    for doc in data:
+        pids.append(doc['Event']['pid'])
+    pids = set(pids)
+    pids = list(pids)
+    return pids
+
+# Return unique pnames
+def get_pnames(data):
+    pnames = []
+    for doc in data:
+        pnames.append(doc['Event']['pname'])
+    pnames = set(pnames)
+    pnames = list(pnames)
+    return pnames
+
+# Return unique filenames
+def get_filenames(data):
+    files = []
+    #for doc in y.load_all(d):
+    for doc in data:
+        files.append(doc['Details']['FSE_ARG_STRING']['string'])
+    files = set(files)
+    files = list(files)
+    return files
+##########################
 
 
 # Help
@@ -167,11 +193,12 @@ if __name__ == "__main__":
 
     # Variables
     inf             = ""
-    print_pids      = False;
-    print_files     = False;
+    print_pids      = False
+    print_files     = False
+    print_types     = False
 
     # Process Options
-    ops = ['-f','-p','-n','-h']
+    ops = ['-f','-p','-n', '-t','-h']
 
     while len(sys.argv) > 1:
         op = sys.argv.pop(1)
@@ -181,6 +208,8 @@ if __name__ == "__main__":
             print_pids  = True
         if op == '-n':
             print_files = True
+        if op == '-t':
+            print_types = True
         if op == '-h':
             usage()
         if op not in ops:
@@ -208,5 +237,6 @@ if __name__ == "__main__":
         print "Error detected, data modified to compensate."
         d = err_check[1]
     
-    if print_pids: list_processes(d)
+    if print_pids:  list_processes(d)
     if print_files: list_process_files(d)
+    if print_types: list_process_types(d)

@@ -141,7 +141,13 @@ void usage(){
     fprintf(stderr, "%s (%s)\n", PROGNAME, PROGVERS);
     fprintf(stderr, "File system change logger for Mac OS X. Usage:\n");
     fprintf(stderr, "\n\tsudo ./%s [output file]\n\n", PROGNAME);
-    fprintf(stderr, "It must be run as root using sudo.\n\n");
+    fprintf(stderr, "\t\t-h:            Print this help.\n");
+    fprintf(stderr, "\t\t-f <filename>: Ooutput to a local file instead of STDOUT.\n");
+    fprintf(stderr, "\t\t-u:            Output to UDP instead of STDOUT. Default: 127.0.0.1:12345.\n");
+    fprintf(stderr, "\t\t-s <x.x.x.x>:  Remote IP address to send UDP data. Default: 127.0.0.1\n");
+    fprintf(stderr, "\t\t-p <#>:        Remote port number to send UDP data. Default: 12345.\n");
+    fprintf(stderr, "\n\nThis program must be run as root using sudo.\n");
+    fprintf(stderr, "Happy Hunting, Cutaway.\n\n");
     exit(1);
 }
 
@@ -192,7 +198,7 @@ main(int argc, char **argv)
 
     onf = stdout;
     opterr = 0;
-    while ((c = getopt (argc, argv, "uf:h:p:")) != -1)
+    while ((c = getopt (argc, argv, "huf:s:p:")) != -1)
         switch (c){
             case 'f':
                 strncpy(fname,optarg,MAX_FILENAME - 1);
@@ -207,12 +213,13 @@ main(int argc, char **argv)
             case 'u':
                 udp = 1;
                 break;
-            case 'h':
+            case 's':
                 strncpy(raddr,optarg,MAX_IP);
                 break;
             case 'p':
                 rport = atoi( optarg );
                 break;
+            case 'h':
             case '?':
                 if (optopt == 'f'){
                     fprintf(stderr, "Output filename required.\n");

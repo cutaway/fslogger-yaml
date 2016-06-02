@@ -68,6 +68,8 @@ def fix_int64_errors(data):
 def get_processes(data):
     processes = {}
     for doc in data:
+        etype = doc['Event']['type']
+        if etype == 'EVENTS_DROPPED': continue
         pid   = doc['Event']['pid']
         pname = doc['Event']['pname']
         # Create dictionary of PIDs and process names
@@ -87,6 +89,8 @@ def get_process_files(data):
     padding   = len('FSE_CONTENT_MODIFIED')
     # {pid:{pname:[file0,file1]}}
     for doc in data:
+        etype = doc['Event']['type']
+        if etype == 'EVENTS_DROPPED': continue
         pid   = doc['Event']['pid']
         pname = doc['Event']['pname']
         # Create dictionary of PIDs and process names
@@ -113,6 +117,8 @@ def get_process_types(data):
     padding   = len('FSE_CONTENT_MODIFIED')
     # {pid:{pname:[file0,file1]}}
     for doc in data:
+        etype = doc['Event']['type']
+        if etype == 'EVENTS_DROPPED': continue
         pid   = doc['Event']['pid']
         pname = doc['Event']['pname']
         ptype = doc['Event']['type']

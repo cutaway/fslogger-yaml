@@ -292,14 +292,14 @@ main(int argc, char **argv)
 
             off += sizeof(int32_t) + sizeof(pid_t); // type + pid
 
+            //Use snprintf for formatting to permit concantenting the message together
             mlen += snprintf(msg + mlen, MAX_DATA, "---\n");
 
             if (kfse->type == FSE_EVENTS_DROPPED) { // special event
-                mlen += snprintf(msg + mlen, MAX_DATA, "Event\n");
-                //Use snprintf for formatting to permit concantenting the message together
-                mlen += snprintf(msg + mlen, MAX_DATA, " %s = %s\n", "type", "EVENTS DROPPED");
-                mlen += snprintf(msg + mlen, MAX_DATA, " %s = %d\n", "pid", kfse->pid);
-                // Special event with continue. So send data
+                mlen += snprintf(msg + mlen, MAX_DATA, "Event:\n");
+                mlen += snprintf(msg + mlen, MAX_DATA, " %s: %s\n", "type", "EVENTS_DROPPED");
+                mlen += snprintf(msg + mlen, MAX_DATA, " %s: %d\n", "pid", kfse->pid);
+                // Special event with continue. So send data then restart loop
                 if (udp){
                     send_packet(msg, strlen(msg));
                 } else {
